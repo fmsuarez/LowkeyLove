@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Liberty Protocol - Dating Sim</title>
+  <style>
+    :root {
+      --pink: #ff7ac8;
+      --pink-dark: #b83280;
+      --purple: rgba(35, 18, 55, 0.86);
+      --white: #fff7fb;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", system-ui, sans-serif;
+      background: #111;
+      overflow: hidden;
+      color: var(--white);
+    }
+
+    .game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background-image: var(--character-image);
+      background-size: cover;
+      background-position: center;
+      isolation: isolate;
+    }
+
+    .game::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 35%, rgba(0,0,0,.28));
+      z-index: -1;
+    }
+
+    .hud {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      width: min(380px, calc(100vw - 36px));
+      padding: 16px;
+      border: 3px solid rgba(255,255,255,.35);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,122,200,.9), rgba(70,25,85,.8));
+      box-shadow: 0 8px 30px var(--shadow);
+    }
+
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 20px;
+      font-weight: bold;
+      text-shadow: 1px 2px 2px #000;
+    }
+
+    .bar {
+      height: 14px;
+      margin-top: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.28);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ffbadf, #ff3fa6);
+      border-radius: 999px;
+      transition: width .35s ease;
+    }
+
+    .day-tag {
+      position: absolute;
+      top: 125px;
+      left: 18px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: rgba(255,122,200,.88);
+      border: 2px solid rgba(255,255,255,.35);
+      font-weight: bold;
+      text-shadow: 1px 2px 2px #000;
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+
+    .menu {
+      position: absolute;
+      right: 22px;
+      top: 22px;
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      color: white;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px #000;
+      background: linear-gradient(#ff9bd7, #d94ca1);
+      border: 2px solid rgba(255,255,255,.35);
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 6px 18px var(--shadow);
+    }
+
+    button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    button:active { transform: translateY(1px); }
+
+    .dialogue-wrap {
+      position: absolute;
+      left: 4vw;
+      right: 4vw;
+      bottom: 25px;
+    }
+
+    .nameplate {
+      display: inline-block;
+      min-width: 210px;
+      padding: 15px 28px;
+      border-radius: 14px 14px 0 0;
+      background: linear-gradient(#ff98d3, #d94ca1);
+      border: 3px solid rgba(255,255,255,.4);
+      border-bottom: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      font-weight: bold;
+      text-align: center;
+      text-shadow: 2px 2px 2px #000;
+      margin-left: 14px;
+    }
+
+    .dialogue {
+      min-height: 138px;
+      padding: 26px 34px;
+      border-radius: 16px;
+      background: var(--purple);
+      border: 3px solid rgba(255,180,225,.9);
+      box-shadow: 0 10px 35px rgba(0,0,0,.5);
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.35;
+      text-shadow: 2px 2px 2px #000;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin: 12px auto 0;
+      width: min(1040px, 92vw);
+    }
+
+    .choice {
+      width: 100%;
+      font-size: clamp(16px, 2vw, 24px);
+      text-align: left;
+      padding: 12px 24px;
+      border-radius: 12px;
+    }
+
+    .ending {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 30px;
+      background: rgba(0,0,0,.82);
+      z-index: 10;
+      text-align: center;
+    }
+
+    .ending-card {
+      width: min(760px, 94vw);
+      border-radius: 24px;
+      padding: 34px;
+      background: linear-gradient(135deg, rgba(255,122,200,.96), rgba(44,19,68,.96));
+      border: 3px solid rgba(255,255,255,.45);
+      box-shadow: 0 18px 60px rgba(0,0,0,.65);
+    }
+
+    .ending h1 { margin: 0 0 14px; font-size: clamp(34px, 5vw, 58px); }
+    .ending p { font-size: clamp(18px, 2.4vw, 26px); line-height: 1.35; }
+
+    .hint {
+      position: absolute;
+      right: 22px;
+      bottom: 12px;
+      opacity: .65;
+      font-size: 13px;
+    }
+
+    .pre-start-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      background: #000;
+      color: white;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .pre-start-title {
+      margin: 0 0 24px;
+      font-size: clamp(48px, 9vw, 110px);
+      letter-spacing: 2px;
+      text-shadow: 0 0 18px rgba(255,255,255,.55);
+    }
+
+    .pre-start-click {
+      font-size: clamp(22px, 4vw, 44px);
+      animation: blink 1.1s infinite;
+    }
+
+    .start-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      background-image: var(--start-image);
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+    }
+
+    .start-screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, rgba(0,0,0,.15), rgba(0,0,0,.72));
+    }
+
+    .start-content {
+      position: relative;
+      text-align: center;
+      padding: 32px;
+      text-shadow: 3px 3px 6px #000;
+    }
+
+    .start-title {
+      margin: 0 0 26px;
+      font-size: clamp(46px, 8vw, 96px);
+      color: #fff7fb;
+    }
+
+    .start-click {
+      font-size: clamp(24px, 4vw, 46px);
+      font-weight: bold;
+      color: #ffbadf;
+      animation: blink 1.1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .25; transform: scale(1.04); }
+    }
+  </style>
+</head>
+<body>
+  <div class="game" id="game">
+    <div class="pre-start-screen" id="preStartScreen" onclick="openStartScreen()">
+      <div>
+        <h1 class="pre-start-title">Liberty Protocol</h1>
+        <div class="pre-start-click">Click to start</div>
+      </div>
+    </div>
+
+    <div class="start-screen" id="startScreen" onclick="startGameFromMenu()">
+      <div class="start-content">
+        <h1 class="start-title">Liberty Protocol</h1>
+        <div class="start-click">Haz click para empezar</div>
+      </div>
+    </div>
+    <div class="hud">
+      <div class="hud-row"><span>💖 Afinidad</span><span id="affinityText">0/100</span></div>
+      <div class="bar"><div class="bar-fill" id="affinityBar"></div></div>
+    </div>
+
+    <div class="day-tag" id="dayTag">☀️ Día 1 - Cafetería</div>
+
+    <div class="menu">
+      <button onclick="toggleMusic()" id="musicBtn">Música</button>
+      <button onclick="restartGame()">Reiniciar</button>
+    </div>
+
+    <div class="dialogue-wrap">
+      <div class="nameplate" id="speaker">Él</div>
+      <div class="dialogue" id="dialogue">...</div>
+      <div class="choices" id="choices"></div>
+    </div>
+
+    <div class="ending" id="ending">
+      <div class="ending-card">
+        <h1 id="endingTitle"></h1>
+        <p id="endingText"></p>
+        <button onclick="returnToStartScreen()">Volver a la pantalla de inicio</button>
+      </div>
+    </div>
+
+    <div class="hint">Editá CHARACTER_IMAGE, BACKGROUND_MUSIC, START_SCREEN_IMAGE, START_SCREEN_MUSIC y CHOICE_SOUND arriba del script.</div>
+  </div>
+
+  <audio id="bgm" loop></audio>
+  <audio id="startBgm" loop></audio>
+  <audio id="choiceSfx"></audio>
+
+  <script>
+    // ==========================
+    // CAMBIÁ ESTAS VARIABLES
+    // ==========================
+
+    // Fondo/personaje estático. Puede ser archivo local o URL.
+    // Ejemplos:
+    // const CHARACTER_IMAGE = "mi-personaje.png";
+    // const CHARACTER_IMAGE = "https://tusitio.com/personaje.jpg";
+    const CHARACTER_IMAGE = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/FAUSTINO.png";
+
+    // Música de fondo. Puede ser .mp3, .ogg, etc.
+    // Dejalo vacío si no querés música.
+    const BACKGROUND_MUSIC = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/BACKGROUND_MUSIC.mp3";
+
+    // Imagen de la pantalla de inicio.
+    const START_SCREEN_IMAGE = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/start-screen.png";
+
+    // Música exclusiva para la pantalla de inicio.
+    const START_SCREEN_MUSIC = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/START_SCREEN_MUSIC.mp3";
+
+    // Sonido que se reproduce cada vez que seleccionás una opción.
+    const CHOICE_SOUND = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/POP.mp3";
+
+    // ==========================
+    // JUEGO
+    // ==========================
+
+    const game = document.getElementById("game");
+    const preStartScreen = document.getElementById("preStartScreen");
+    const startScreen = document.getElementById("startScreen");
+    const bgm = document.getElementById("bgm");
+    const startBgm = document.getElementById("startBgm");
+    const choiceSfx = document.getElementById("choiceSfx");
+    const dialogue = document.getElementById("dialogue");
+    const speaker = document.getElementById("speaker");
+    const choices = document.getElementById("choices");
+    const affinityText = document.getElementById("affinityText");
+    const affinityBar = document.getElementById("affinityBar");
+    const dayTag = document.getElementById("dayTag");
+    const ending = document.getElementById("ending");
+    const endingTitle = document.getElementById("endingTitle");
+    const endingText = document.getElementById("endingText");
+    const musicBtn = document.getElementById("musicBtn");
+
+    let state = {
+      node: "start",
+      affinity: 0,
+      chaos: 0,
+      respect: 0,
+      lowkey: 0
+    };
+
+    game.style.setProperty("--character-image", `url('${CHARACTER_IMAGE}')`);
+    game.style.setProperty("--start-image", `url('${START_SCREEN_IMAGE}')`);
+    if (BACKGROUND_MUSIC) bgm.src = BACKGROUND_MUSIC;
+    if (START_SCREEN_MUSIC) startBgm.src = START_SCREEN_MUSIC;
+    if (CHOICE_SOUND) choiceSfx.src = CHOICE_SOUND;
+
+    const story = {
+      start: {
+        day: "☀️ Día 1 - Cafetería",
+        speaker: "Él",
+        text: "Buenas. Llegué tarde porque estaba viendo elecciones regionales del Reino Unido mientras auditaba telegramas fiscales. Prioridades.",
+        choices: [
+          { text: "Preguntarle por política.", next: "politics", affinity: 8, respect: 2 },
+          { text: "Preguntarle por trenes.", next: "trains", affinity: 10 },
+          { text: "Decirle que te gusta Counter.", next: "counter", affinity: 12, lowkey: 1 },
+          { text: "Preguntar por qué todos le dicen Almirante.", next: "aoe", affinity: 14, chaos: 1 }
+        ]
+      },
+
+      politics: {
+        speaker: "Él",
+        text: `La gente cree que fiscalizar es aburrido. Pero una vez terminé sentado al lado del dueño de Fiat mientras revisábamos mesas.
+
+El Estado tiene MUCHOS recursos si sabés dónde mirar.`,
+        choices: [
+          { text: "Eso suena peligrosamente ilegal.", next: "illegal", affinity: -4, respect: 1 },
+          { text: "Preguntarle sobre geopolítica.", next: "geography", affinity: 10, respect: 2 },
+          { text: "Decir que admirás el compromiso cívico.", next: "respectful", affinity: 14 }
+        ]
+      },
+
+      trains: {
+        speaker: "Él",
+        text: `Los trenes representan civilización.
+
+La decadencia de un país se mide por sus vías ferroviarias.`,
+        choices: [
+          { text: "Preguntarle por ingeniería civil.", next: "engineer", affinity: 12, respect: 2 },
+          { text: "Decir que preferís autos.", next: "cars", affinity: -2 },
+          { text: "Preguntar si tiene una maqueta ferroviaria.", next: "trainNerd", affinity: 9 }
+        ]
+      },
+
+      counter: {
+        speaker: "Él",
+        text: `Global Elite. Aunque en VR soy todavía peor persona.
+
+No juego shooters para divertirme, juego para humillar tácticamente.`,
+        choices: [
+          { text: "Invitarlo a jugar Counter.", next: "competitive", affinity: 14 },
+          { text: "Preguntarle por VR.", next: "vr", affinity: 10 },
+          { text: "Decirle que suena intenso.", next: "intense", affinity: 4 }
+        ]
+      },
+
+      aoe: {
+        speaker: "Él",
+        text: `En Age of Empires me dicen 'El Almirante'.
+
+Uso una estrategia naval tan cobarde que varios amigos dejaron de jugar conmigo.`,
+        choices: [
+          { text: "Eso es guerra psicológica.", next: "admiral", affinity: 16 },
+          { text: "Decir que eso no tiene honor.", next: "dishonor", affinity: -5 },
+          { text: "Preguntar si tiene velero real.", next: "sailboat", affinity: 11 }
+        ]
+      },
+
+      geography: {
+        speaker: "Él",
+        text: `Puedo reconocer casi cualquier bandera en menos de dos segundos.
+
+Y sí, estaba siguiendo elecciones de gobernador del Reino Unido porque los mapas electorales son fascinantes.`,
+        choices: [
+          { text: "Eso es absurdamente específico.", next: "specific", affinity: 7 },
+          { text: "Preguntarle países que nadie ubica.", next: "quiz", affinity: 12, respect: 2 },
+          { text: "Mirarlo con admiración nerd.", next: "respectful", affinity: 10 }
+        ]
+      },
+
+      engineer: {
+        speaker: "Él",
+        text: `Ingeniero civil.
+
+La gente piensa que trabajo en oficinas, pero terminé más tiempo investigando gente que calculando estructuras.`,
+        choices: [
+          { text: "Eso suena muy turbina.", next: "illegal", affinity: 2 },
+          { text: "Decirle que eso es atractivo.", next: "romanticCheck", affinity: 15 },
+          { text: "Preguntar por la Armada.", next: "navy", affinity: 12 }
+        ]
+      },
+
+      vr: {
+        speaker: "Él",
+        text: `Una vez me quedé dormido en VR durante una conversación.
+
+Ronqué tan fuerte que pensaron que se había roto el micrófono.`,
+        choices: [
+          { text: "Reírte muchísimo.", next: "funny", affinity: 14 },
+          { text: "Preguntar qué juega.", next: "competitive", affinity: 10 },
+          { text: "Decir que eso es adorable.", next: "romanticCheck", affinity: 12 }
+        ]
+      },
+
+      navy: {
+        speaker: "Él",
+        text: `Trabajo en la Armada. Operador.
+
+No puedo decir demasiado... aunque ya dije demasiado.`,
+        choices: [
+          { text: "Preguntar si espía gente.", next: "spy", affinity: 8, chaos: 2 },
+          { text: "Cambiar de tema rápidamente.", next: "safe", affinity: 5 },
+          { text: "Decirle que parece protagonista de thriller político.", next: "romanticCheck", affinity: 14 }
+        ]
+      },
+
+      spy: {
+        speaker: "Él",
+        text: `Mirá... digamos que los recursos estatales pueden acelerar investigaciones.
+
+Pero jamás tanto como mi odio hacia Don Banquito.`,
+        choices: [
+          { text: "Preguntar quién es Don Banquito.", next: "donbanquito", affinity: 10, chaos: 2 },
+          { text: "Fingir que no escuchaste eso.", next: "safe", affinity: 2 },
+          { text: "Decir que eso suena personal.", next: "respectful", affinity: 8 }
+        ]
+      },
+
+      donbanquito: {
+        speaker: "Él",
+        text: `No quiero hablar de Don Banquito.
+
+Pero si un día desaparece de Discord, yo estaba navegando en mi velero.`,
+        choices: [
+          { text: "Cambiar inmediatamente de tema.", next: "sailboat", affinity: 8 },
+          { text: "Preguntarle por el velero.", next: "sailboat", affinity: 12 },
+          { text: "Decirle que le tenés miedo.", next: "fear", affinity: 5 }
+        ]
+      },
+
+      sailboat: {
+        speaker: "Él",
+        text: `Sí, tengo un velero.
+
+La gente cree que navegar relaja. En realidad solo pienso estrategias de Age of Empires mientras miro el agua.`,
+        choices: [
+          { text: "Navegar juntos hacia el horizonte.", next: "barquitoEnding", affinity: 20 },
+          { text: "Preguntar si el mar guarda secretos místicos.", next: "mysticEnding", chaos: 5 },
+          { text: "Decirle que es un verdadero almirante.", next: "admiralEnding", affinity: 16 },
+          { text: "Preguntarle por su mayor victoria competitiva.", next: "toreto", affinity: 11 },
+          { text: "Preguntarle si conoce a Bruh.", next: "bruhfriend", affinity: 13 }
+        ]
+      },
+
+      bruhfriend: {
+        speaker: "Él",
+        text: `¿Bruh? Sí, es amigo mío.
+
+Una vez jugamos VR juntos y se quedó diciendo 'lowkey' durante cuarenta minutos seguidos. Gran tipo.`,
+        choices: [
+          { text: "Decir que lo conocés.", next: "romanticCheck", affinity: 15 },
+          { text: "Hablar más sobre Bruh.", next: "bruhEnding", affinity: 10 },
+          { text: "Preguntar por otras citas raras.", next: "bald", affinity: 12, chaos: 2 },
+          { text: "Preguntar por Nicolás.", next: "nicolasEnding", chaos: 3 },
+          { text: "Preguntar por elecciones.", next: "mileiEnding", respect: 2 }
+        ]
+      },
+
+      bald: {
+        speaker: "Él",
+        text: `Una vez tuve una cita con un calvo homosexual.
+
+Horas después el mozo me confesó que yo había estado hablando solo todo el tiempo.`,
+        choices: [
+          { text: "Eso es perturbador.", next: "chaosEndingCheck", affinity: 8, chaos: 4 },
+          { text: "Preguntar si era real.", next: "baldEnding", affinity: 10, chaos: 5 },
+          { text: "Reírte nerviosamente.", next: "friendEnding", affinity: 8 }
+        ]
+      },
+
+      toreto: {
+        speaker: "Él",
+        text: `Mi momento más importante fue cuando mis comentarios políticos hicieron que Toreto abandonara el Discord.
+
+Nunca me recuperé emocionalmente de esa victoria.`,
+        choices: [
+          { text: "Eso fue una victoria moral.", next: "trueCheck", affinity: 18, lowkey: 2 },
+          { text: "Decir que eso es tristísimo.", next: "aloneEnding", affinity: -6 },
+          { text: "Preguntar qué dijo Toreto.", next: "chaosEndingCheck", affinity: 10, chaos: 3 }
+        ]
+      },
+
+      illegal: { ending: "Final Investigado", text: "Hiciste demasiadas preguntas. Días después apareciste en una planilla Excel del Estado con color rojo." },
+      respectful: { ending: "Final Patriótico", text: "Terminan viendo mapas electorales mientras él explica geopolítica y critica infraestructura ferroviaria." },
+      trainNerd: { ending: "Final Ferroviario", text: "Pasaron seis horas hablando de trenes. Nadie fue feliz excepto él." },
+      cars: { ending: "Final Fiat", text: "Mencionaste autos y él estuvo 45 minutos contando cómo conoció al dueño de Fiat fiscalizando." },
+      competitive: { ending: "Final Competitivo", text: "Terminaron insultándose tácticamente en Counter hasta las 5 AM. Para él, eso cuenta como romance." },
+      intense: { ending: "Final Tensión", text: "Descubriste que salir con alguien ultra competitivo es agotador. Igual lo agregaste a Steam." },
+      admiral: { ending: "Final Almirante Clásico", text: "Te enseña estrategias navales cobardes en Age of Empires mientras sonríe orgullosamente." },
+      dishonor: { ending: "Final Sin Honor", text: "Criticaste sus tácticas navales. La cita terminó inmediatamente." },
+      specific: { ending: "Final Geopolítico", text: "Quedaste atrapado en una discusión de cuatro horas sobre fronteras europeas." },
+      quiz: { ending: "Final Banderas", text: "Reconoció correctamente 193 banderas seguidas. Empezaste a sospechar que no era humano." },
+      funny: { ending: "Final Ronquido", text: "La cita terminó con él dormido sobre la mesa roncando mientras sonaba VRChat de fondo." },
+      safe: { ending: "Final Prudente", text: "Decidiste no preguntar demasiado. Probablemente fue la mejor decisión de tu vida." },
+      fear: { ending: "Final Don Banquito", text: "Mencionaste a Don Banquito una vez más. Él te miró fijamente y pidió la cuenta." },
+
+      trueCheck: { check: () => state.affinity >= 40 ? "trueEnding" : "friendEnding" },
+      romanticCheck: { check: () => state.affinity >= 30 ? "romanticEnding" : "friendEnding" },
+      chaosEndingCheck: { check: () => state.chaos >= 5 ? "chaosEnding" : "friendEnding" },
+
+      trueEnding: { ending: "Final Verdadero: Liberty Protocol", text: "Aceptaste sus estrategias cobardes, sus investigaciones turbias y sus discusiones políticas eternas. Navegan juntos mientras discuten mapas electorales en VR." },
+      barquitoEnding: { ending: "Final Barquito Feliz", text: "Abandonaron toda discusión política y se fueron a navegar. Él sonrió por primera vez en toda la cita mientras hablaba de barcos militares." },
+      mysticEnding: { ending: "Final Místico", text: "La conversación se volvió tan geopolítica que trascendieron el plano material. Ahora existen como entidades astrales discutiendo mapas y banderas." },
+      bruhEnding: { ending: "Final Bruh", text: "Apareció Bruh inesperadamente. Los tres terminaron diciendo 'lowkey' durante dos horas mientras VRChat se crasheaba." },
+      baldEnding: { ending: "Final El Pelado de la Otra Cita", text: "El mozo volvió a acercarse y confesó que el pelado seguía ahí. Vos nunca lograste verlo." },
+      admiralEnding: { ending: "Final Almirante", text: "Te convertiste en su segundo al mando naval en Age of Empires. Las estrategias cobardes ahora son de a dos." },
+      nicolasEnding: { ending: "Final Nicolás", text: "Nicolás apareció en Discord y comenzó una discusión política tan intensa que la cafetería tuvo que cerrar." },
+      mileiEnding: { ending: "Final Milei Perdió las Elecciones", text: "Él quedó en silencio absoluto mirando resultados electorales. Jamás volvió a ser el mismo." },
+      romanticEnding: { ending: "Final Romántico", text: "No entendiste del todo sus teorías políticas, pero sí entendiste que realmente le gustabas." },
+      chaosEnding: { ending: "Final Caótico", text: "La conversación derivó en conspiraciones, Counter, geopolítica y Don Banquito. Nadie sabe cómo terminó la noche." },
+      friendEnding: { ending: "Final Amistoso", text: "Ahora juegan Counter juntos y cada tanto él te manda mapas ferroviarios a las 3 AM." },
+      aloneEnding: { ending: "Final Solo", text: "La cita terminó cuando empezó a hablar de fiscalización por quinta vez consecutiva." }
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function updateHud() {
+      state.affinity = clamp(state.affinity, 0, 100);
+      affinityText.textContent = `${state.affinity}/100`;
+      affinityBar.style.width = `${state.affinity}%`;
+    }
+
+    function go(nodeName) {
+      let node = story[nodeName];
+      while (node && node.check) {
+        nodeName = node.check();
+        node = story[nodeName];
+      }
+
+      state.node = nodeName;
+      updateHud();
+
+      if (node.ending) {
+        endingTitle.textContent = node.ending;
+        endingText.textContent = node.text;
+        ending.style.display = "grid";
+        return;
+      }
+
+      ending.style.display = "none";
+      speaker.textContent = node.speaker || "Él";
+      dialogue.textContent = node.text;
+      if (node.day) dayTag.textContent = node.day;
+
+      choices.innerHTML = "";
+      node.choices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = choice.text;
+        btn.onclick = () => choose(choice);
+        choices.appendChild(btn);
+      });
+    }
+
+    function choose(choice) {
+      playChoiceSound();
+      state.affinity += choice.affinity || 0;
+      state.chaos += choice.chaos || 0;
+      state.respect += choice.respect || 0;
+      state.lowkey += choice.lowkey || 0;
+      go(choice.next);
+    }
+
+    function resetGameState() {
+      state = { node: "start", affinity: 0, chaos: 0, respect: 0, lowkey: 0 };
+      dayTag.textContent = "☀️ Día 1 - Cafetería";
+      updateHud();
+    }
+
+    function restartGame() {
+      resetGameState();
+      go("start");
+    }
+
+    function openStartScreen() {
+      preStartScreen.style.display = "none";
+      startScreen.style.display = "grid";
+
+      if (START_SCREEN_MUSIC) {
+        startBgm.volume = 0.45;
+        startBgm.currentTime = 0;
+        startBgm.play().catch(console.log);
+      }
+    }
+
+    function startGameFromMenu() {
+      startScreen.style.display = "none";
+      if (START_SCREEN_MUSIC) startBgm.pause();
+      if (BACKGROUND_MUSIC) {
+        bgm.volume = 0.45;
+        bgm.play();
+        musicBtn.textContent = "Pausar música";
+      }
+      restartGame();
+    }
+
+    function returnToStartScreen() {
+      ending.style.display = "none";
+      resetGameState();
+      go("start");
+      startScreen.style.display = "grid";
+      preStartScreen.style.display = "none";
+
+      if (BACKGROUND_MUSIC) {
+        bgm.pause();
+        bgm.currentTime = 0;
+      }
+
+      if (START_SCREEN_MUSIC) {
+        startBgm.volume = 0.45;
+        startBgm.currentTime = 0;
+        startBgm.play().catch(console.log);
+      }
+
+      musicBtn.textContent = "Música";
+    }
+
+    function playChoiceSound() {
+      if (!CHOICE_SOUND) return;
+      choiceSfx.currentTime = 0;
+      choiceSfx.play();
+    }
+
+    function toggleMusic() {
+      if (!BACKGROUND_MUSIC) {
+        musicBtn.textContent = "Sin música";
+        return;
+      }
+      if (bgm.paused) {
+        bgm.volume = 0.45;
+        bgm.play();
+        musicBtn.textContent = "Pausar música";
+      } else {
+        bgm.pause();
+        musicBtn.textContent = "Música";
+      }
+    }
+
+    go("start");
+  </script>
+</body>
+</html>
