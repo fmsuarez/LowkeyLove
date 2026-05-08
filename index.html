@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lowkey Love - Dating Sim</title>
+  <style>
+    :root {
+      --pink: #ff7ac8;
+      --pink-dark: #b83280;
+      --purple: rgba(35, 18, 55, 0.86);
+      --white: #fff7fb;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", system-ui, sans-serif;
+      background: #111;
+      overflow: hidden;
+      color: var(--white);
+    }
+
+    .game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background-image: var(--character-image);
+      background-size: cover;
+      background-position: center;
+      isolation: isolate;
+    }
+
+    .game::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 35%, rgba(0,0,0,.28));
+      z-index: -1;
+    }
+
+    .hud {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      width: min(380px, calc(100vw - 36px));
+      padding: 16px;
+      border: 3px solid rgba(255,255,255,.35);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,122,200,.9), rgba(70,25,85,.8));
+      box-shadow: 0 8px 30px var(--shadow);
+    }
+
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 20px;
+      font-weight: bold;
+      text-shadow: 1px 2px 2px #000;
+    }
+
+    .bar {
+      height: 14px;
+      margin-top: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.28);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ffbadf, #ff3fa6);
+      border-radius: 999px;
+      transition: width .35s ease;
+    }
+
+    .day-tag {
+      position: absolute;
+      top: 125px;
+      left: 18px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: rgba(255,122,200,.88);
+      border: 2px solid rgba(255,255,255,.35);
+      font-weight: bold;
+      text-shadow: 1px 2px 2px #000;
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+
+    .menu {
+      position: absolute;
+      right: 22px;
+      top: 22px;
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      color: white;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px #000;
+      background: linear-gradient(#ff9bd7, #d94ca1);
+      border: 2px solid rgba(255,255,255,.35);
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 6px 18px var(--shadow);
+    }
+
+    button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    button:active { transform: translateY(1px); }
+
+    .dialogue-wrap {
+      position: absolute;
+      left: 4vw;
+      right: 4vw;
+      bottom: 25px;
+    }
+
+    .nameplate {
+      display: inline-block;
+      min-width: 210px;
+      padding: 15px 28px;
+      border-radius: 14px 14px 0 0;
+      background: linear-gradient(#ff98d3, #d94ca1);
+      border: 3px solid rgba(255,255,255,.4);
+      border-bottom: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      font-weight: bold;
+      text-align: center;
+      text-shadow: 2px 2px 2px #000;
+      margin-left: 14px;
+    }
+
+    .dialogue {
+      min-height: 138px;
+      padding: 26px 34px;
+      border-radius: 16px;
+      background: var(--purple);
+      border: 3px solid rgba(255,180,225,.9);
+      box-shadow: 0 10px 35px rgba(0,0,0,.5);
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.35;
+      text-shadow: 2px 2px 2px #000;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin: 12px auto 0;
+      width: min(1040px, 92vw);
+    }
+
+    .choice {
+      width: 100%;
+      font-size: clamp(16px, 2vw, 24px);
+      text-align: left;
+      padding: 12px 24px;
+      border-radius: 12px;
+    }
+
+    .ending {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 30px;
+      background: rgba(0,0,0,.82);
+      z-index: 10;
+      text-align: center;
+    }
+
+    .ending-card {
+      width: min(760px, 94vw);
+      border-radius: 24px;
+      padding: 34px;
+      background: linear-gradient(135deg, rgba(255,122,200,.96), rgba(44,19,68,.96));
+      border: 3px solid rgba(255,255,255,.45);
+      box-shadow: 0 18px 60px rgba(0,0,0,.65);
+    }
+
+    .ending h1 { margin: 0 0 14px; font-size: clamp(34px, 5vw, 58px); }
+    .ending p { font-size: clamp(18px, 2.4vw, 26px); line-height: 1.35; }
+
+    .hint {
+      position: absolute;
+      right: 22px;
+      bottom: 12px;
+      opacity: .65;
+      font-size: 13px;
+    }
+
+    .pre-start-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      background: #000;
+      color: white;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .pre-start-title {
+      margin: 0 0 24px;
+      font-size: clamp(48px, 9vw, 110px);
+      letter-spacing: 2px;
+      text-shadow: 0 0 18px rgba(255,255,255,.55);
+    }
+
+    .pre-start-click {
+      font-size: clamp(22px, 4vw, 44px);
+      animation: blink 1.1s infinite;
+    }
+
+    .start-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      background-image: var(--start-image);
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+    }
+
+    .start-screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, rgba(0,0,0,.15), rgba(0,0,0,.72));
+    }
+
+    .start-content {
+      position: relative;
+      text-align: center;
+      padding: 32px;
+      text-shadow: 3px 3px 6px #000;
+    }
+
+    .start-title {
+      margin: 0 0 26px;
+      font-size: clamp(46px, 8vw, 96px);
+      color: #fff7fb;
+    }
+
+    .start-click {
+      font-size: clamp(24px, 4vw, 46px);
+      font-weight: bold;
+      color: #ffbadf;
+      animation: blink 1.1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .25; transform: scale(1.04); }
+    }
+  </style>
+</head>
+<body>
+  <div class="game" id="game">
+    <div class="pre-start-screen" id="preStartScreen" onclick="openStartScreen()">
+      <div>
+        <h1 class="pre-start-title">Lokey Love</h1>
+        <div class="pre-start-click">Click to start</div>
+      </div>
+    </div>
+
+    <div class="start-screen" id="startScreen" onclick="startGameFromMenu()">
+      <div class="start-content">
+        <h1 class="start-title">Lowkey Love</h1>
+        <div class="start-click">Haz click para empezar</div>
+      </div>
+    </div>
+    <div class="hud">
+      <div class="hud-row"><span>💖 Afinidad</span><span id="affinityText">0/100</span></div>
+      <div class="bar"><div class="bar-fill" id="affinityBar"></div></div>
+    </div>
+
+    <div class="day-tag" id="dayTag">☀️ Día 1 - Cafetería</div>
+
+    <div class="menu">
+      <button onclick="toggleMusic()" id="musicBtn">Música</button>
+      <button onclick="restartGame()">Reiniciar</button>
+    </div>
+
+    <div class="dialogue-wrap">
+      <div class="nameplate" id="speaker">Él</div>
+      <div class="dialogue" id="dialogue">...</div>
+      <div class="choices" id="choices"></div>
+    </div>
+
+    <div class="ending" id="ending">
+      <div class="ending-card">
+        <h1 id="endingTitle"></h1>
+        <p id="endingText"></p>
+        <button onclick="returnToStartScreen()">Volver a la pantalla de inicio</button>
+      </div>
+    </div>
+
+    <div class="hint">Editá CHARACTER_IMAGE, BACKGROUND_MUSIC, START_SCREEN_IMAGE, START_SCREEN_MUSIC y CHOICE_SOUND arriba del script.</div>
+  </div>
+
+  <audio id="bgm" loop></audio>
+  <audio id="startBgm" loop></audio>
+  <audio id="choiceSfx"></audio>
+
+  <script>
+    // ==========================
+    // CAMBIÁ ESTAS VARIABLES
+    // ==========================
+
+    // Fondo/personaje estático. Puede ser archivo local o URL.
+    // Ejemplos:
+    // const CHARACTER_IMAGE = "mi-personaje.png";
+    // const CHARACTER_IMAGE = "https://tusitio.com/personaje.jpg";
+    const CHARACTER_IMAGE = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/a_stylized_anime_visual_novel_scene_set_in_a_cozy.png";
+
+    // Música de fondo. Puede ser .mp3, .ogg, etc.
+    // Dejalo vacío si no querés música.
+    const BACKGROUND_MUSIC = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/BACKGROUND_MUSIC.mp3";
+
+    // Imagen de la pantalla de inicio.
+    const START_SCREEN_IMAGE = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/start-screen.png";
+
+    // Música exclusiva para la pantalla de inicio.
+    const START_SCREEN_MUSIC = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/START_SCREEN_MUSIC.mp3";
+
+    // Sonido que se reproduce cada vez que seleccionás una opción.
+    const CHOICE_SOUND = "https://raw.githubusercontent.com/fmsuarez/LowkeyLove/refs/heads/main/POP.mp3";
+
+    // ==========================
+    // JUEGO
+    // ==========================
+
+    const game = document.getElementById("game");
+    const preStartScreen = document.getElementById("preStartScreen");
+    const startScreen = document.getElementById("startScreen");
+    const bgm = document.getElementById("bgm");
+    const startBgm = document.getElementById("startBgm");
+    const choiceSfx = document.getElementById("choiceSfx");
+    const dialogue = document.getElementById("dialogue");
+    const speaker = document.getElementById("speaker");
+    const choices = document.getElementById("choices");
+    const affinityText = document.getElementById("affinityText");
+    const affinityBar = document.getElementById("affinityBar");
+    const dayTag = document.getElementById("dayTag");
+    const ending = document.getElementById("ending");
+    const endingTitle = document.getElementById("endingTitle");
+    const endingText = document.getElementById("endingText");
+    const musicBtn = document.getElementById("musicBtn");
+
+    let state = {
+      node: "start",
+      affinity: 0,
+      chaos: 0,
+      respect: 0,
+      lowkey: 0
+    };
+
+    game.style.setProperty("--character-image", `url('${CHARACTER_IMAGE}')`);
+    game.style.setProperty("--start-image", `url('${START_SCREEN_IMAGE}')`);
+    if (BACKGROUND_MUSIC) bgm.src = BACKGROUND_MUSIC;
+    if (START_SCREEN_MUSIC) startBgm.src = START_SCREEN_MUSIC;
+    if (CHOICE_SOUND) choiceSfx.src = CHOICE_SOUND;
+
+    const story = {
+      start: {
+        day: "☀️ Día 1 - Cafetería",
+        speaker: "Él",
+        text: "Buenasssss.",
+        choices: [
+          { text: "Hola, ¿venís mucho a esta cafetería?", next: "cafe", affinity: 5, respect: 1 },
+          { text: "Bruh.", next: "mirror", affinity: 10, lowkey: 1 },
+          { text: "Necesito que uses una oración completa.", next: "grammar", affinity: -8, respect: 2 },
+          { text: "Cuh.", next: "cuh", affinity: 6, chaos: 2 }
+        ]
+      },
+      cafe: {
+        speaker: "Él",
+        text: `Lowkey... el café acá pega distinto, cuh.
+
+Ayer me quedé hasta las 4 AM jugando mods rarísimos del Half-Life en Source, bruh.`,
+        choices: [
+          { text: "Invitarle un latte con dibujito de corazón.", next: "latte", affinity: 14, lowkey: 1 },
+          { text: "Pedirle que explique qué significa eso.", next: "explain", affinity: 2, respect: 2 },
+          { text: "Decirle: 'No cap, este lugar tiene aura'.", next: "aura", affinity: 12, lowkey: 2 },
+          { text: "Mirar el menú en silencio durante 40 segundos.", next: "silence", affinity: 4, chaos: 1 }
+        ]
+      },
+      mirror: {
+        speaker: "Él",
+        text: "Bruh... lowkey vos entendés la frecuencia.",
+        choices: [
+          { text: "Responder: 'Cuh fr'.", next: "frequency", affinity: 16, lowkey: 3 },
+          { text: "Sonreír sin saber qué está pasando.", next: "smile", affinity: 8 },
+          { text: "Cambiar el tema a filosofía existencial.", next: "philosophy", affinity: -3, respect: 3 }
+        ]
+      },
+      grammar: {
+        speaker: "Él",
+        text: "Bruh 💀",
+        choices: [
+          { text: "Disculparte y decir 'lowkey me equivoqué'.", next: "recovery", affinity: 7, lowkey: 1 },
+          { text: "Insistir con la gramática.", next: "badGrammar", affinity: -20, respect: 3 },
+          { text: "Cambiar de tema: '¿Querés medialunas?'", next: "latte", affinity: 6 }
+        ]
+      },
+      cuh: {
+        speaker: "Él",
+        text: "Cuh...",
+        choices: [
+          { text: "Asentir como si fuera profundo.", next: "deep", affinity: 9, chaos: 1 },
+          { text: "Decir '¿eso fue una amenaza o una confesión?'.", next: "threat", affinity: 4, chaos: 3 },
+          { text: "Responder con un simple 'lowkey'.", next: "frequency", affinity: 13, lowkey: 2 }
+        ]
+      },
+      latte: {
+        day: "🌸 Día 2 - La cita avanza",
+        speaker: "Él",
+        text: `Lowkey... esto es cine.
+
+Me hace acordar a esas cinemáticas hechas en Source Filmmaker, cuh.`,
+        choices: [
+          { text: "Tomarle la mano dramáticamente.", next: "hand", affinity: 18, lowkey: 1 },
+          { text: "Decir: 'Vos sos mi visual novel favorita'.", next: "visualNovel", affinity: 15, chaos: 1 },
+          { text: "Preguntar si tiene sueños y metas.", next: "dreams", affinity: 7, respect: 3 },
+          { text: "Decir solo 'Bruh'.", next: "frequency", affinity: 10, lowkey: 2 }
+        ]
+      },
+      explain: {
+        speaker: "Él",
+        text: `Lowkey significa lowkey, bruh.
+
+Como Doom: no necesitás explicación, solo sentirlo.`,
+        choices: [
+          { text: "Aceptar esa definición circular.", next: "deep", affinity: 10, lowkey: 1 },
+          { text: "Pedir una segunda explicación.", next: "badExplain", affinity: -7 },
+          { text: "Anotar todo como si fuera un idioma antiguo.", next: "scholar", affinity: 8, respect: 2 }
+        ]
+      },
+      aura: { speaker: "Él", text: "Cuh... aura reconocida.", choices: [
+        { text: "Decir 'somos dos almas lowkey'.", next: "hand", affinity: 16, lowkey: 2 },
+        { text: "Pedir postre para celebrar.", next: "dessert", affinity: 9 },
+        { text: "Confesar que no entendés nada.", next: "honesty", affinity: 5, respect: 2 }
+      ]},
+      silence: { speaker: "Él", text: "...", choices: [
+        { text: "Mantener el silencio. La tensión crece.", next: "silentEndingCheck", affinity: 5, chaos: 2 },
+        { text: "Romper el silencio con 'bruh'.", next: "frequency", affinity: 12, lowkey: 2 }
+      ]},
+      frequency: { speaker: "Él", text: `You get me.
+
+Lowkey jugar VR hasta marearse también es parte del desarrollo de personaje.`, choices: [
+        { text: "Confesar tus sentimientos en slang.", next: "trueCheck", affinity: 20, lowkey: 3 },
+        { text: "Invitarlo a otra cafetería mañana.", next: "latte", affinity: 8 },
+        { text: "Decir algo demasiado formal.", next: "badGrammar", affinity: -12 }
+      ]},
+      smile: { speaker: "Él", text: `Lowkey cute.
+
+¿Jugás VR? Porque necesito alguien que entienda el dolor de configurar SteamVR por 3 horas para jugar 20 minutos, bruh.`, choices: [
+        { text: "Seguir sonriendo como NPC romántico.", next: "hand", affinity: 12 },
+        { text: "Admitir que estás perdido.", next: "honesty", affinity: 6, respect: 2 }
+      ]},
+      philosophy: { speaker: "Él", text: `Bruh... la existencia lowkey duele.
+
+Especialmente cuando un mod de Half-Life queda abandonado hace 11 años.`, choices: [
+        { text: "Hablar de la soledad humana.", next: "deepEndingCheck", affinity: 6, respect: 4 },
+        { text: "Volver al café y al slang.", next: "latte", affinity: 5 }
+      ]},
+      recovery: { speaker: "Él", text: "Cuh... redemption arc.", choices: [
+        { text: "Prometer aprender su idioma.", next: "scholar", affinity: 10, respect: 2 },
+        { text: "Decir 'bruh fr' con humildad.", next: "frequency", affinity: 13, lowkey: 2 }
+      ]},
+      badGrammar: { ending: "Final Malo: Gramática Mortal", text: "Corregiste demasiado. Él dijo 'Bruh 💀' y se fue caminando hacia el horizonte de la cafetería. Nunca más volvió a responder tus mensajes." },
+      deep: { speaker: "Él", text: "Lowkey profundo, cuh.", choices: [
+        { text: "Decir que su silencio tiene capas.", next: "deepEndingCheck", affinity: 10, respect: 2 },
+        { text: "Cambiar a modo romántico.", next: "hand", affinity: 12 }
+      ]},
+      threat: { speaker: "Él", text: "Bruh... ambas.", choices: [
+        { text: "Aceptar la dualidad.", next: "chaosEndingCheck", affinity: 8, chaos: 4 },
+        { text: "Retroceder lentamente.", next: "normalEndingCheck", affinity: -2 }
+      ]},
+      hand: { speaker: "Él", text: "Lowkey... mi corazón hizo bruh.", choices: [
+        { text: "Decir: 'el mío también, cuh'.", next: "trueCheck", affinity: 18, lowkey: 2 },
+        { text: "Besar su mano como protagonista dramático.", next: "romanticCheck", affinity: 15, chaos: 1 },
+        { text: "Pedir la cuenta y escapar del sentimiento.", next: "normalEndingCheck", affinity: -4 }
+      ]},
+      visualNovel: { speaker: "Él", text: "Bruh... rompiste la cuarta pared.", choices: [
+        { text: "Guardar partida.", next: "metaEnding", affinity: 5, chaos: 4 },
+        { text: "Decir que el amor también es una interfaz.", next: "deepEndingCheck", affinity: 10, respect: 2 }
+      ]},
+      dreams: { speaker: "Él", text: `Lowkey... quiero ser entendido sin subtítulos.
+
+Como un jugador de Doom cuando habla de WADs custom hechos en 2004.`, choices: [
+        { text: "Decir que querés entenderlo.", next: "romanticCheck", affinity: 16, respect: 3 },
+        { text: "Responder 'bruh' con ternura.", next: "trueCheck", affinity: 15, lowkey: 2 }
+      ]},
+      dessert: { speaker: "Él", text: "Cuh... cheesecake arc.", choices: [
+        { text: "Compartir el postre.", next: "romanticCheck", affinity: 12 },
+        { text: "Comerte todo solo.", next: "badDessert", affinity: -15, chaos: 1 }
+      ]},
+      honesty: { speaker: "Él", text: "Bruh... honestidad detected.", choices: [
+        { text: "Pedirle que te enseñe desde cero.", next: "scholar", affinity: 12, respect: 3 },
+        { text: "Decir que igual te cae bien.", next: "romanticCheck", affinity: 14 }
+      ]},
+      scholar: { speaker: "Él", text: "Lowkey alumno avanzado.", choices: [
+        { text: "Presentar tesis: Bruh como emoción universal.", next: "deepEndingCheck", affinity: 12, respect: 4 },
+        { text: "Usar tu conocimiento para declararte.", next: "trueCheck", affinity: 18, lowkey: 2 }
+      ]},
+      badExplain: { ending: "Final Confuso", text: "Pediste demasiadas explicaciones. Él abrió un hilo mental de 48 mensajes, pero todos decían 'lowkey'. La cita quedó en buffering eterno." },
+      badDessert: { ending: "Final Cheesecake Robado", text: "El amor podía sobrevivir al silencio, al slang y al caos, pero no a que te comieras todo el postre. Afinidad destruida." },
+      metaEnding: { ending: "Final Meta", text: "Guardaste partida justo cuando él dijo 'Bruh'. El juego entendió que era consciente de sí mismo y cerró la cafetería para siempre." },
+      silentEndingCheck: { check: () => state.chaos >= 3 ? "silentEnding" : "normalEndingCheck" },
+      trueCheck: { check: () => state.affinity >= 70 && state.lowkey >= 7 ? "trueEnding" : "romanticCheck" },
+      romanticCheck: { check: () => state.affinity >= 55 ? "romanticEnding" : "normalEndingCheck" },
+      deepEndingCheck: { check: () => state.respect >= 8 ? "deepEnding" : "normalEndingCheck" },
+      chaosEndingCheck: { check: () => state.chaos >= 7 ? "chaosEnding" : "normalEndingCheck" },
+      normalEndingCheck: { check: () => state.affinity >= 35 ? "friendEnding" : "aloneEnding" },
+      trueEnding: { ending: "Final Verdadero: Lowkey Love", text: "Dominaste el idioma secreto: bruh, cuh y lowkey. Él te mira, sonríe y dice: 'You get me'. La cafetería aplaude sin motivo aparente. Después se van juntos a jugar un mod cooperativo de Half-Life en VR mientras suena música MIDI de Doom." },
+      romanticEnding: { ending: "Final Romántico", text: "No entendiste todas sus palabras, pero sí su intención. Terminan compartiendo café, miradas raras y una promesa: hablar poco, sentir mucho." },
+      deepEnding: { ending: "Final Filosófico", text: "Descubriste que 'Bruh' no era una palabra, sino una postura ante la vida. No hubo beso, pero sí una tesis emocional de 300 páginas." },
+      chaosEnding: { ending: "Final Caótico", text: "La cita se convirtió en una batalla de slang. Nadie ganó, nadie entendió nada, pero ambos desbloquearon una energía peligrosamente compatible." },
+      silentEnding: { ending: "Final Silencioso", text: "Nadie habló durante 17 minutos. Fue incómodo, intenso y extrañamente perfecto. El mozo lloró sin saber por qué." },
+      friendEnding: { ending: "Final Amistoso", text: "No hubo romance, pero sí respeto. Ahora se mandan memes a las 3 AM y cada tanto él responde: 'cuh'." },
+      aloneEnding: { ending: "Final Solo", text: "La cita terminó. Él dijo 'bruh' una última vez y volvió a su plano existencial. Al menos el café estaba bueno." }
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function updateHud() {
+      state.affinity = clamp(state.affinity, 0, 100);
+      affinityText.textContent = `${state.affinity}/100`;
+      affinityBar.style.width = `${state.affinity}%`;
+    }
+
+    function go(nodeName) {
+      let node = story[nodeName];
+      while (node && node.check) {
+        nodeName = node.check();
+        node = story[nodeName];
+      }
+
+      state.node = nodeName;
+      updateHud();
+
+      if (node.ending) {
+        endingTitle.textContent = node.ending;
+        endingText.textContent = node.text;
+        ending.style.display = "grid";
+        return;
+      }
+
+      ending.style.display = "none";
+      speaker.textContent = node.speaker || "Él";
+      dialogue.textContent = node.text;
+      if (node.day) dayTag.textContent = node.day;
+
+      choices.innerHTML = "";
+      node.choices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = choice.text;
+        btn.onclick = () => choose(choice);
+        choices.appendChild(btn);
+      });
+    }
+
+    function choose(choice) {
+      playChoiceSound();
+      state.affinity += choice.affinity || 0;
+      state.chaos += choice.chaos || 0;
+      state.respect += choice.respect || 0;
+      state.lowkey += choice.lowkey || 0;
+      go(choice.next);
+    }
+
+    function resetGameState() {
+      state = { node: "start", affinity: 0, chaos: 0, respect: 0, lowkey: 0 };
+      dayTag.textContent = "☀️ Día 1 - Cafetería";
+      updateHud();
+    }
+
+    function restartGame() {
+      resetGameState();
+      resetGameState();
+    }
+
+    function openStartScreen() {
+      preStartScreen.style.display = "none";
+      startScreen.style.display = "grid";
+
+      if (START_SCREEN_MUSIC) {
+        startBgm.volume = 0.45;
+        startBgm.currentTime = 0;
+        startBgm.play().catch(console.log);
+      }
+    }
+
+    function startGameFromMenu() {
+      startScreen.style.display = "none";
+      if (START_SCREEN_MUSIC) startBgm.pause();
+      if (BACKGROUND_MUSIC) {
+        bgm.volume = 0.45;
+        bgm.play();
+        musicBtn.textContent = "Pausar música";
+      }
+      restartGame();
+    }
+
+    function returnToStartScreen() {
+      ending.style.display = "none";
+      resetGameState();
+      startScreen.style.display = "none";
+    go("start"); // deja el juego realmente reiniciado detrás de la pantalla de inicio
+      startScreen.style.display = "grid";
+
+      if (BACKGROUND_MUSIC) {
+        bgm.pause();
+        bgm.currentTime = 0;
+      }
+
+      if (START_SCREEN_MUSIC) {
+        startBgm.volume = 0.45;
+        startBgm.currentTime = 0;
+        startBgm.play();
+      }
+
+      musicBtn.textContent = "Música";
+    }
+
+    function playChoiceSound() {
+      if (!CHOICE_SOUND) return;
+      choiceSfx.currentTime = 0;
+      choiceSfx.play();
+    }
+
+    function toggleMusic() {
+      if (!BACKGROUND_MUSIC) {
+        musicBtn.textContent = "Sin música";
+        return;
+      }
+      if (bgm.paused) {
+        bgm.volume = 0.45;
+        bgm.play();
+        musicBtn.textContent = "Pausar música";
+      } else {
+        bgm.pause();
+        musicBtn.textContent = "Música";
+      }
+    }
+
+    go("start");
+  </script>
+</body>
+</html>
